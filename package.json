@@ -1,0 +1,30 @@
+{
+  "name": "clockify-cli",
+  "version": "0.0.1",
+  "description": "Command Line Interface (CLI) application to interact with the Clockify API",
+  "homepage": "https://github.com/Mr-Camargo/clockify-cli#readme",
+  "bugs": {
+    "url": "https://github.com/Mr-Camargo/clockify-cli/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Mr-Camargo/clockify-cli.git"
+  },
+  "license": "MIT",
+  "author": "Sebastián Camargo Marín",
+  "bin": {
+    "clockify": "./index.js"
+  },
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "chalk": "^5.6.2",
+    "commander": "^14.0.2",
+    "conf": "^15.0.2",
+    "figlet": "^1.9.3",
+    "inquirer": "^12.10.0"
+  }
+}
