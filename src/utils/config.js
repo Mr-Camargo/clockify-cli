@@ -2,7 +2,7 @@ import Conf from "conf";
 
 const config = new Conf({
   projectName: "clockify-cli",
-  encryptionKey: "your-optional-encryption-key", // Optional: encrypts stored data
+  encryptionKey: "your-optional-encryption-key",
 });
 
 export const setApiKey = (apiKey) => {
