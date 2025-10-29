@@ -2,12 +2,13 @@ import { Command } from "commander";
 import inquirer from "inquirer";
 import chalk from "chalk";
 import {
-  setApiKey,
   getApiKey,
   removeApiKey,
   hasApiKey,
 } from "../utils/config.js";
 import { getUserInfo } from "../utils/userInfo.js";
+import { promptForApiKey } from "../utils/keyManager.js";
+import handleError from "../utils/error.js";
 
 const authCommand = new Command("auth").description(
   "Manage Clockify authentication"
@@ -17,6 +18,7 @@ authCommand
   .command("login")
   .description("Store your Clockify API key")
   .action(async () => {
+    try {
     if (hasApiKey()) {
       const { confirm } = await inquirer.prompt([
         {
@@ -30,31 +32,18 @@ authCommand
         return;
       } else {
         try {
-          await removeApiKey();
-            console.log(chalk.green("✓ Logged out successfully!"));
+          removeApiKey();
+          console.log(chalk.green("\n✓ Logged out successfully!"));
         } catch (error) {
-          console.error(chalk.red("Failed to logout. Please try again."));
-          return console.error(error);
+          console.error(chalk.red("\n✗ Failed to logout. Please try again."));
+          return console.error(chalk.red(error));
         }
+      }
     }
-    } 
-    const answers = await inquirer.prompt([
-      {
-        type: "password",
-        name: "apiKey",
-        message: "Enter your Clockify API key",
-        validate: (input) => {
-          if (!input || input.trim().length === 0) {
-            return "API key cannot be empty";
-          } else {
-            return true;
-        }
-        },
-      },
-    ]);
-
-    setApiKey(answers.apiKey);
-    console.log(chalk.green("✓ API key saved successfully!"));
+    await promptForApiKey();
+    } catch (error) {
+      handleError(error);
+    }
   });
 
 authCommand
@@ -76,7 +65,7 @@ authCommand
     ]);
 
     if (confirm) {
-     try {
+      try {
         await removeApiKey();
         console.log(chalk.green("✓ API key removed successfully!"));
       } catch (error) {

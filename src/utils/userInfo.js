@@ -1,6 +1,7 @@
 // get user info from clockify api
 import axios from "axios";
 import { getApiKey } from "./config.js";
+import handleError from "./error.js";
 
 export const getUserInfo = async () => {
     const apiKey = getApiKey();
@@ -16,7 +17,7 @@ export const getUserInfo = async () => {
             return response.data;
         }
         catch (error) {
-            throw new Error("Failed to fetch user info from Clockify API: " + error.message);
+            handleError(error);
         }
     }
 };

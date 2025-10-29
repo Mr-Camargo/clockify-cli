@@ -5,6 +5,14 @@ const config = new Conf({
   encryptionKey: "your-optional-encryption-key",
 });
 
+export const isFirstRun = () => {
+  return !config.has("firstRun");
+};
+
+export const setFirstRun = () => {
+  return config.set("firstRun", false);
+};
+
 export const setApiKey = (apiKey) => {
   config.set("apiKey", apiKey);
 };
