@@ -4,11 +4,13 @@ import chalk from "chalk";
 import {
   getApiKey,
   removeApiKey,
-  hasApiKey,
+  hasApiKey, hasAPIKeyFile, getAPIKeyFile,
+  setApiKey
 } from "../utils/config.js";
 import { getUserInfo } from "../utils/userInfo.js";
 import { promptForApiKey } from "../utils/keyManager.js";
 import handleError from "../utils/error.js";
+import ora from "ora";
 
 const authCommand = new Command("auth").description(
   "Manage Clockify authentication"
@@ -19,28 +21,89 @@ authCommand
   .description("Store your Clockify API key")
   .action(async () => {
     try {
-    if (hasApiKey()) {
-      const { confirm } = await inquirer.prompt([
-        {
-          type: "confirm",
-          name: "confirm",
-          message: "An API key is already stored. Would you like to logout and continue?",
-          default: false,
-        },
-      ]);
-      if (!confirm) {
-        return;
-      } else {
+      if (hasAPIKeyFile() && !hasApiKey()) {
+        const { importKeyFile } = await inquirer.prompt([
+          {
+            type: "confirm",
+            name: "importKeyFile",
+            message: "An API key has been found in the API_KEY file. Would you like to import it?",
+            default: false,
+          },
+        ]);
+        if (importKeyFile) {
+          try {
+            const apiKey = await getAPIKeyFile();
+            setApiKey(apiKey);
+            const spinner = ora({
+              text: chalk.gray("Contacting Clockify Services..."),
+              spinner: "toggle6",
+            }).start();
+            try {
+              const userInfo = await getUserInfo();
+              spinner.stop();
+              return console.log(chalk.green(`\n✓ API key imported from file! Logged in as ${userInfo.name} (${userInfo.email})\n`));
+            } catch (error) {
+              spinner.stop();
+              handleError(error);
+            }
+          } catch (error) {
+            console.log(error);
+            handleError(error);
+          }
+        }
+      }
+
+      if (hasAPIKeyFile() && hasApiKey()) {
+        const apiKey = await getAPIKeyFile();
+        const { overwriteWithAPIKeyFile } = await inquirer.prompt([
+          {
+            type: "confirm",
+            name: "overwriteWithAPIKeyFile",
+            message: "You are already logged in, although an API key has been found in the API_KEY file. Would you like to import it?",
+            default: false,
+          },
+        ]);
+
+        if (overwriteWithAPIKeyFile) {
+          try {
+            if (getApiKey() === apiKey) {
+              return console.log(chalk.yellow("\nYou are already logged in with the API key from the API_KEY file!"));
+            }
+            setApiKey(apiKey);
+            const userInfo = await getUserInfo();
+            return console.log(chalk.green(`\n✓ API key imported from file! Logged in as ${userInfo.name} (${userInfo.email})\n`));
+          } catch (error) {
+            return handleError(error);
+          }
+        }
+      }
+
+      if (hasApiKey()) {
+        console.log(getApiKey());
+        const { confirm } = await inquirer.prompt([
+          {
+            type: "confirm",
+            name: "confirm",
+            message: "An API key is already stored. Would you like to logout and continue?",
+            default: false,
+          },
+        ]);
+
+        if (!confirm) {
+          return;
+        }
+
         try {
-          removeApiKey();
+          await removeApiKey();
+          console.log(getApiKey());
           console.log(chalk.green("\n✓ Logged out successfully!"));
         } catch (error) {
           console.error(chalk.red("\n✗ Failed to logout. Please try again."));
           return console.error(chalk.red(error));
         }
       }
-    }
-    await promptForApiKey();
+
+      await promptForApiKey();
     } catch (error) {
       handleError(error);
     }
@@ -81,19 +144,32 @@ authCommand
   .command("status")
   .description("Check authentication status")
   .action(async () => {
-    if (hasApiKey()) {
-      const apiKey = getApiKey();
-      const masked = apiKey.slice(0, 4) + "..." + apiKey.slice(-4);
-      console.log(chalk.green("✓ Authenticated"));
-      console.log(chalk.gray(`API Key: ${masked}`));
-      console.log(chalk.gray("User Info:"));
-      // Fetch and display user info
+    if (!hasApiKey()) {
+      return console.log([chalk.yellow("Not authenticated"), chalk.gray("Run 'clockify auth login' to authenticate")].join("\n"));
+    }
+
+    const apiKey = getApiKey();
+    const masked = apiKey.slice(0, 4) + "..." + apiKey.slice(-4);
+
+    const spinner = ora({
+      text: chalk.gray("Contacting Clockify Services..."),
+      spinner: "toggle6",
+    }).start();
+
+    try {
       const userInfo = await getUserInfo();
-      console.log(chalk.gray(`Name: ${userInfo.name}`));
-      console.log(chalk.gray(`Email: ${userInfo.email}`));
-    } else {
-      console.log(chalk.yellow("Not authenticated"));
-      console.log(chalk.gray("Run 'clockify auth login' to authenticate"));
+      spinner.stop();
+
+      console.log([
+        chalk.green("✓ Authenticated"),
+        chalk.gray(`API Key: ${masked}`),
+        chalk.gray("User Info:"),
+        chalk.gray(`  Name: ${userInfo.name}`),
+        chalk.gray(`  Email: ${userInfo.email}`),
+      ].join("\n"));
+    } catch (error) {
+      spinner.stop();
+      handleError(error);
     }
   });
 
