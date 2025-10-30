@@ -8,7 +8,7 @@ import {
   setApiKey
 } from "../utils/config.js";
 import { getUserInfo } from "../utils/userInfo.js";
-import { promptForApiKey } from "../utils/keyManager.js";
+import { promptForApiKey, importKeyFromFile } from "../utils/keyManager.js";
 import handleError from "../utils/error.js";
 import ora from "ora";
 
@@ -31,30 +31,11 @@ authCommand
           },
         ]);
         if (importKeyFile) {
-          try {
-            const apiKey = await getAPIKeyFile();
-            setApiKey(apiKey);
-            const spinner = ora({
-              text: chalk.gray("Contacting Clockify Services..."),
-              spinner: "toggle6",
-            }).start();
-            try {
-              const userInfo = await getUserInfo();
-              spinner.stop();
-              return console.log(chalk.green(`\n✓ API key imported from file! Logged in as ${userInfo.name} (${userInfo.email})\n`));
-            } catch (error) {
-              spinner.stop();
-              handleError(error);
-            }
-          } catch (error) {
-            console.log(error);
-            handleError(error);
-          }
+          return await importKeyFromFile();
         }
       }
 
       if (hasAPIKeyFile() && hasApiKey()) {
-        const apiKey = await getAPIKeyFile();
         const { overwriteWithAPIKeyFile } = await inquirer.prompt([
           {
             type: "confirm",
@@ -63,23 +44,12 @@ authCommand
             default: false,
           },
         ]);
-
         if (overwriteWithAPIKeyFile) {
-          try {
-            if (getApiKey() === apiKey) {
-              return console.log(chalk.yellow("\nYou are already logged in with the API key from the API_KEY file!"));
-            }
-            setApiKey(apiKey);
-            const userInfo = await getUserInfo();
-            return console.log(chalk.green(`\n✓ API key imported from file! Logged in as ${userInfo.name} (${userInfo.email})\n`));
-          } catch (error) {
-            return handleError(error);
-          }
+          return await importKeyFromFile("overwrite");
         }
       }
 
       if (hasApiKey()) {
-        console.log(getApiKey());
         const { confirm } = await inquirer.prompt([
           {
             type: "confirm",
@@ -95,7 +65,6 @@ authCommand
 
         try {
           await removeApiKey();
-          console.log(getApiKey());
           console.log(chalk.green("\n✓ Logged out successfully!"));
         } catch (error) {
           console.error(chalk.red("\n✗ Failed to logout. Please try again."));

@@ -6,10 +6,14 @@ export const handleError = (error) => {
         process.exit(2);
     }
     
-    if (!error.response) {
-        console.error(chalk.red(`\n✗ Network Error: ${error.message}\n`));
+    // Check for actual network connectivity issues
+    const networkErrorCodes = ['ECONNREFUSED', 'ENOTFOUND', 'ECONNRESET', 'ETIMEDOUT', 'ENETUNREACH', 'ECONNABORTED'];
+    if (!error.response && networkErrorCodes.includes(error.code)) {
+        const message = error.message || error.code || 'Unable to connect to Clockify services. Please check your internet connection.';
+        console.error(chalk.red(`\n✗ Network Error: ${message}\n`));
         return process.exit(1);
     }
+
     switch (error.response?.status) {
         case 401:
             console.error(chalk.red("\n✗ Unauthorized: Invalid API key. Please check your API key and try again."));
@@ -24,7 +28,8 @@ export const handleError = (error) => {
             console.error(chalk.red("\n✗ Internal Server Error: Something went wrong with Clockify Services. Please try again later."));
             return process.exit(1);
         default:
-            console.error(chalk.red(`\n✗ An error occurred: ${error.message}\n`));
+            const errorMsg = error.message || error.response?.statusText || 'An unknown error occurred';
+            console.error(chalk.red(`\n✗ ${errorMsg}\n`));
             return process.exit(1);
     }
 };
