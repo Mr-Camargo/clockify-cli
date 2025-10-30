@@ -1,0 +1,33 @@
+{
+  // Prettier configuration
+  "prettier.enable": true,
+
+  // ESLint configuration
+  "eslint.enable": true,
+  "eslint.validate": ["javascript"],
+
+  // Set Prettier as the default formatter for JavaScript
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "files.insertFinalNewline": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit"
+    }
+  },
+
+  // Editor settings to align with Google style guide
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.detectIndentation": false,
+  "files.trimTrailingWhitespace": true,
+
+  // Import organization
+  "editor.suggest.insertMode": "replace",
+  "javascript.suggest.autoImports": true,
+  "javascript.updateImportsOnFileMove.enabled": "always",
+
+  // Additional helpful settings
+  "editor.rulers": [80],
+  "editor.wordWrap": "off"
+}
