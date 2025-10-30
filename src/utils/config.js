@@ -2,7 +2,6 @@ import Conf from 'conf';
 import fs from 'fs/promises';
 import path from 'path';
 import {fileURLToPath} from 'url';
-import handleError from './error.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -56,15 +55,11 @@ export const hasAPIKeyFile = async () => {
 };
 
 export const getAPIKeyFile = async () => {
-  if (!(await hasAPIKeyFile())) {
-    throw new Error(handleError('API key file does not exist.'));
-  } else {
-    try {
-      const content = await fs.readFile(API_KEY_PATH, 'utf8');
-      return content.trim();
-    } catch {
-      return false;
-    }
+  try {
+    const content = await fs.readFile(API_KEY_PATH, 'utf8');
+    return content.trim();
+  } catch {
+    return false;
   }
 };
 

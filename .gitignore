@@ -140,3 +140,5 @@ vite.config.ts.timestamp-*
 
 # Clockify API Key file (Optional addition to simplify local development)
 API_KEY
+
+.DS_Store

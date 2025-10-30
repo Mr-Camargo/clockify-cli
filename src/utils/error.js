@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 
-export const handleError = (error) => {
+const handleError = (error) => {
   if (error.name === 'ExitPromptError') {
     console.log(chalk.gray('\nBye!'));
     process.exit(2);

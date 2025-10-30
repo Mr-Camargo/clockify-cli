@@ -8,8 +8,12 @@ import {
   hasAPIKeyFile,
 } from '../utils/config.js';
 import {getUserInfo} from '../utils/userInfo.js';
-import {promptForApiKey, importKeyFromFile} from '../utils/keyManager.js';
-import handleError from '../utils/error.j';
+import {
+  promptForApiKey,
+  importKeyFromFile,
+  importKeyFromArgument,
+} from '../utils/keyManager.js';
+import handleError from '../utils/error.js';
 import ora from 'ora';
 
 const authCommand = new Command('auth').description(
@@ -19,9 +23,14 @@ const authCommand = new Command('auth').description(
 authCommand
   .command('login')
   .description('Store your Clockify API key')
-  .action(async () => {
+  .arguments('[apiKey]')
+  .action(async (apiKey) => {
     try {
-      if (hasAPIKeyFile() && !hasApiKey()) {
+      if (apiKey) {
+        // If API key is provided as an argument, import it directly
+        return await importKeyFromArgument(apiKey);
+      }
+      if ((await hasAPIKeyFile()) && !hasApiKey()) {
         const {importKeyFile} = await inquirer.prompt([
           {
             type: 'confirm',
@@ -36,7 +45,7 @@ authCommand
         }
       }
 
-      if (hasAPIKeyFile() && hasApiKey()) {
+      if ((await hasAPIKeyFile()) && hasApiKey()) {
         const {overwriteWithAPIKeyFile} = await inquirer.prompt([
           {
             type: 'confirm',
@@ -67,11 +76,10 @@ authCommand
         }
 
         try {
-          await removeApiKey();
+          removeApiKey();
           console.log(chalk.green('\n✓ Logged out successfully!'));
         } catch (error) {
-          console.error(chalk.red('\n✗ Failed to logout. Please try again.'));
-          return console.error(chalk.red(error));
+          return handleError(error);
         }
       }
 
@@ -101,7 +109,7 @@ authCommand
 
     if (confirm) {
       try {
-        await removeApiKey();
+        removeApiKey();
         console.log(chalk.green('✓ API key removed successfully!'));
       } catch (error) {
         console.error(chalk.red('Failed to remove API key. Please try again.'));
