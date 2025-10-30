@@ -43,6 +43,21 @@ export const promptForApiKey = async () => {
   }
 };
 
+export const promptForApiKeyImport = async () => {
+  const {importKeyFile} = await inquirer.prompt([
+    {
+      type: 'confirm',
+      name: 'importKeyFile',
+      message:
+        'An API key has been found in the API_KEY file. Would you like to import it?',
+      default: false,
+    },
+  ]);
+  if (importKeyFile) {
+    return await importKeyFromFile();
+  }
+};
+
 export const importKeyFromFile = async (condition) => {
   try {
     if (condition === 'overwrite' && getApiKey() === (await getAPIKeyFile())) {

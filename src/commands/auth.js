@@ -12,6 +12,7 @@ import {
   promptForApiKey,
   importKeyFromFile,
   importKeyFromArgument,
+  promptForApiKeyImport,
 } from '../utils/keyManager.js';
 import handleError from '../utils/error.js';
 import ora from 'ora';
@@ -31,18 +32,7 @@ authCommand
         return await importKeyFromArgument(apiKey);
       }
       if ((await hasAPIKeyFile()) && !hasApiKey()) {
-        const {importKeyFile} = await inquirer.prompt([
-          {
-            type: 'confirm',
-            name: 'importKeyFile',
-            message:
-              'An API key has been found in the API_KEY file. Would you like to import it?',
-            default: false,
-          },
-        ]);
-        if (importKeyFile) {
-          return await importKeyFromFile();
-        }
+        return await promptForApiKeyImport();
       }
 
       if ((await hasAPIKeyFile()) && hasApiKey()) {

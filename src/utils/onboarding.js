@@ -1,8 +1,8 @@
 import chalk from 'chalk';
 import figlet from 'figlet';
 import inquirer from 'inquirer';
-import {setFirstRun} from './config.js';
-import {promptForApiKey} from './keyManager.js';
+import {setFirstRun, hasAPIKeyFile} from './config.js';
+import {promptForApiKey, promptForApiKeyImport} from './keyManager.js';
 
 export const runFirstTimeSetup = async () => {
   console.log(
@@ -28,7 +28,11 @@ export const runFirstTimeSetup = async () => {
   ]);
 
   if (shouldSetup) {
-    await promptForApiKey();
+    if (await hasAPIKeyFile()) {
+      await promptForApiKeyImport();
+    } else {
+      await promptForApiKey();
+    }
   } else {
     console.log(
       chalk.yellow('\nYou can set up your API key later by running:')
