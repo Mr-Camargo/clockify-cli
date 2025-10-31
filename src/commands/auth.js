@@ -7,7 +7,8 @@ import {
   hasApiKey,
   hasAPIKeyFile,
 } from '../utils/config.js';
-import {getUserInfo} from '../utils/userInfo.js';
+import {getUserInfo} from '../api/userInfo.js';
+import getWorkspaceInfo from '../api/workspace.js';
 import {
   promptForApiKey,
   importKeyFromFile,
@@ -135,6 +136,7 @@ authCommand
 
     try {
       const userInfo = await getUserInfo();
+      const workspaceInfo = await getWorkspaceInfo();
       spinner.stop();
 
       console.log(
@@ -144,6 +146,7 @@ authCommand
           chalk.gray('User Info:'),
           chalk.gray(`  Name: ${userInfo.name}`),
           chalk.gray(`  Email: ${userInfo.email}`),
+          chalk.gray(`  Workspace: ${workspaceInfo.name}`),
         ].join('\n')
       );
     } catch (error) {

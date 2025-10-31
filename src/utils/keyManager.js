@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 import inquirer from 'inquirer';
 import {setApiKey, getApiKey, removeApiKey, getAPIKeyFile} from './config.js';
-import {getUserInfo} from './userInfo.js';
+import {getUserInfo} from '../api/userInfo.js';
 import handleError from './error.js';
 import ora from 'ora';
 
