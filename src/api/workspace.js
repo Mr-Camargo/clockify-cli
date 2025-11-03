@@ -1,24 +1,15 @@
 // get workspace info from clockify api
 import axios from 'axios';
-import {getApiKey} from '../utils/config.js';
 import {getUserInfo} from './userInfo.js';
 import handleError from '../utils/error.js';
+import {apiHeaders} from '../utils/apiHeaders.js';
 
 export const getWorkspaceInfo = async (item) => {
-  const apiKey = getApiKey();
-  if (!apiKey) {
-    throw new Error('API key not found. Please login first.');
-  }
-
   try {
     const userInfo = await getUserInfo();
     const response = await axios.get(
       `https://api.clockify.me/api/v1/workspaces/${userInfo.activeWorkspace}`,
-      {
-        headers: {
-          'X-Api-Key': apiKey,
-        },
-      }
+      {headers: apiHeaders()}
     );
 
     if (!item) return response.data;

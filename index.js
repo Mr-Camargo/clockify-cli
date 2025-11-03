@@ -11,7 +11,7 @@ if (isFirstRun()) {
 }
 
 program
-  .version('Delta 0.0.1')
+  .version('1.0.0-delta')
   .description(
     'Command Line Interface (CLI) application to interact with the Clockify API'
   );

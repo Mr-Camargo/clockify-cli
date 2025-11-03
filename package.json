@@ -1,6 +1,6 @@
 {
   "name": "clockify-cli",
-  "version": "0.0.1",
+  "version": "1.0.0-delta",
   "description": "Command Line Interface (CLI) application to interact with the Clockify API",
   "homepage": "https://github.com/Mr-Camargo/clockify-cli#readme",
   "bugs": {

@@ -1,4 +1,5 @@
 import chalk from 'chalk';
+import {getApiKey} from './config.js';
 
 const handleError = (error) => {
   if (error.name === 'ExitPromptError') {
@@ -26,6 +27,14 @@ const handleError = (error) => {
 
   switch (error.response?.status) {
     case 401:
+      if (getApiKey() == null) {
+        console.error(
+          chalk.red(
+            `\n✗ You are not logged in. Please login first using ${chalk.yellow('clockify auth login')}.`
+          )
+        );
+        return process.exit(1);
+      }
       console.error(
         chalk.red(
           '\n✗ Unauthorized: Invalid API key. Please check your API key and try again.'
@@ -56,7 +65,7 @@ const handleError = (error) => {
         error.message ||
         error.response?.statusText ||
         'An unknown error occurred';
-      console.error(chalk.red(`\n✗ ${errorMsg}\n`));
+      console.error(chalk.red(`✗ ${errorMsg}`));
       return process.exit(1);
     }
   }

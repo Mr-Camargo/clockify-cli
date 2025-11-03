@@ -26,6 +26,9 @@ export const setApiKey = (apiKey) => {
 };
 
 export const getApiKey = () => {
+  if (!config.has('apiKey')) {
+    return null;
+  }
   return config.get('apiKey');
 };
 
