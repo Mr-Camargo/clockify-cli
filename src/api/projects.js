@@ -22,7 +22,7 @@ export const getProjects = async (options = []) => {
   }
 };
 
-export const findProject = async (projectId) => {
+export const findProjectById = async (projectId) => {
   try {
     const workspaceId = await getWorkspaceInfo('id');
     const response = await axios.get(
@@ -30,6 +30,19 @@ export const findProject = async (projectId) => {
       {headers: apiHeaders()}
     );
     return response.data.find((proj) => proj.id === projectId) || null;
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+export const findProjectByName = async (projectName) => {
+  try {
+    const workspaceId = await getWorkspaceInfo('id');
+    const response = await axios.get(
+      `https://api.clockify.me/api/v1/workspaces/${workspaceId}/projects`,
+      {headers: apiHeaders()}
+    );
+    return response.data.find((proj) => proj.name === projectName)?.id || null;
   } catch (error) {
     handleError(error);
   }

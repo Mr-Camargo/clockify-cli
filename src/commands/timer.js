@@ -1,10 +1,15 @@
 import {Command} from 'commander';
 import inquirer from 'inquirer';
 import chalk from 'chalk';
-import {getProjects, findProject} from '../api/projects.js';
+import {
+  getProjects,
+  findProjectById,
+  findProjectByName,
+} from '../api/projects.js';
 import getWorkspaceInfo from '../api/workspace.js';
 import {startTimer, activeTimer, stopTimer} from '../api/timeEntries.js';
 import {timerDuration} from '../utils/timerDuration.js';
+import {spinnerConfig} from '../utils/spinnerConfig.js';
 import handleError from '../utils/error.js';
 import ora from 'ora';
 
@@ -18,15 +23,24 @@ timerCommand
   .option('-d, --description [description]', 'what are you working on?')
   .option('-p, --project [project]', 'what project is this timer for?')
   .action(async (options) => {
-    const spinner = ora({
-      text: chalk.gray('Contacting Clockify Services...'),
-      spinner: 'toggle6',
-    }).start();
+    const spinner = ora(spinnerConfig).start();
     try {
       const workspaceInfo = await getWorkspaceInfo();
       const projects = await getProjects();
-      spinner.stop();
+      if (options.project) {
+        const projectId = await findProjectByName(options.project);
+        if (!projectId) {
+          spinner.stop();
+          return console.log(
+            chalk.red(
+              `${options.project} is not a project in your workspace ${workspaceInfo.name}.`
+            )
+          );
+        }
+        options.project = projectId;
+      }
       if (!options.description) {
+        spinner.stop();
         const {description} = await inquirer.prompt([
           {
             type: 'input',
@@ -35,11 +49,13 @@ timerCommand
           },
         ]);
         options.description = description;
+        spinner.start();
       }
       if (
         !options.project &&
         workspaceInfo.workspaceSettings.forceProjects === true
       ) {
+        spinner.stop();
         const {selectProject} = await inquirer.prompt([
           {
             type: 'list',
@@ -52,8 +68,10 @@ timerCommand
           },
         ]);
         options.project = selectProject;
+        spinner.start();
       }
       await startTimer(options.description, options.project);
+      spinner.stop();
       console.log(chalk.green('✓ Timer started successfully!'));
     } catch (error) {
       spinner.stop();
@@ -65,10 +83,7 @@ timerCommand
   .command('stop')
   .description('Stop the current timer')
   .action(async () => {
-    const spinner = ora({
-      text: chalk.gray('Contacting Clockify Services...'),
-      spinner: 'toggle6',
-    }).start();
+    const spinner = ora(spinnerConfig).start();
     try {
       await stopTimer();
       spinner.stop();
@@ -83,10 +98,7 @@ timerCommand
   .command('status')
   .description('Check the status of the current timer')
   .action(async () => {
-    const spinner = ora({
-      text: chalk.gray('Contacting Clockify Services...'),
-      spinner: 'toggle6',
-    }).start();
+    const spinner = ora(spinnerConfig).start();
     try {
       const activeTimerData = await activeTimer();
       if (!activeTimerData) {
@@ -94,29 +106,26 @@ timerCommand
         return console.log(
           [
             chalk.yellow('You are not currently running a timer.'),
-            chalk.gray("Run 'clockify timer start' to start a new timer"),
+            chalk.gray(
+              `Run ${chalk.bold('clockify timer start')} to start a new timer`
+            ),
           ].join('\n')
         );
       }
-      let activeTimerMsg;
-      if (activeTimerData) {
-        if (activeTimerData.projectId) {
-          const project = await findProject(activeTimerData.projectId);
-          spinner.stop();
-          activeTimerMsg = `${activeTimerData.description} ${chalk.gray(`(${project.name})`)} for ${chalk.green(timerDuration(activeTimerData.timeInterval.start))}.`;
-          return console.log(
-            chalk.gray(`Currently tracking ${activeTimerMsg}`)
-          );
-        } else {
-          spinner.stop();
-          activeTimerMsg = `${activeTimerData.description} for ${chalk.green(timerDuration(activeTimerData.timeInterval.start))}.`;
-          return console.log(
-            chalk.gray(`Currently tracking ${activeTimerMsg}`)
-          );
-        }
-      } else {
-        return console.log(chalk.yellow('No active timer found.'));
+      const activeTimerDuration = timerDuration(
+        activeTimerData.timeInterval.start
+      );
+
+      // Build message based on project presence
+      let activeTimerMsg = `${chalk.white.bold(activeTimerData.description)} for ${chalk.green(activeTimerDuration)}.`;
+
+      if (activeTimerData.projectId) {
+        const project = await findProjectById(activeTimerData.projectId);
+        activeTimerMsg = `${chalk.white.bold(activeTimerData.description)} ${chalk.gray(`(${project.name})`)} for ${chalk.green(activeTimerDuration)}.`;
       }
+
+      spinner.stop();
+      console.log(chalk.gray(`Currently tracking ${activeTimerMsg}`));
     } catch (error) {
       spinner.stop();
       handleError(error);
