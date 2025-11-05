@@ -37,7 +37,7 @@ export const activeTimer = async () => {
     if (!response.data[0]?.timeInterval.end) {
       return response.data[0];
     }
-    return false;
+    return null;
   } catch (error) {
     handleError(error);
   }
@@ -58,6 +58,54 @@ export const stopTimer = async () => {
       {headers: apiHeaders()}
     );
     return response.data[0];
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+export const findTimeEntries = async (count) => {
+  try {
+    if (count < 0 || !Number.isInteger(count)) {
+      return Promise.reject(new Error('Count must be a positive integer.'));
+    }
+    const userInfo = await getUserInfo();
+    const response = await axios.get(
+      `https://api.clockify.me/api/v1/workspaces/${userInfo.activeWorkspace}/user/${userInfo.id}/time-entries`,
+      {headers: apiHeaders(), params: {'page-size': count}}
+    );
+    // if there are any time entries, return the data of the time entries being deleted
+    if (response.data.length > 0) {
+      return response.data.slice(0, Math.min(count, response.data.length));
+    } else if (response.data.length === 0) {
+      return Promise.reject(new Error('No time entries found to delete.'));
+    }
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+export const deleteTimeEntry = async (count) => {
+  try {
+    if (count <= 0 || !Number.isInteger(count)) {
+      return Promise.reject(new Error('Count must be a positive integer.'));
+    }
+
+    // Fetch user info and time entries in parallel
+    const [userInfo, timeEntry] = await Promise.all([
+      getUserInfo(),
+      findTimeEntries(count),
+    ]);
+
+    await Promise.all(
+      timeEntry.map((entry) =>
+        axios.delete(
+          `https://api.clockify.me/api/v1/workspaces/${userInfo.activeWorkspace}/time-entries/${entry.id}`,
+          {headers: apiHeaders()}
+        )
+      )
+    );
+
+    return timeEntry;
   } catch (error) {
     handleError(error);
   }

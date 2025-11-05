@@ -1,6 +1,6 @@
-export function timerDuration(startTime) {
+export function timerDuration(startTime, endTime) {
   const start = new Date(startTime);
-  const end = new Date();
+  const end = new Date(endTime || Date.now());
   const durationMs = end - start;
 
   const seconds = Math.floor((durationMs / 1000) % 60);

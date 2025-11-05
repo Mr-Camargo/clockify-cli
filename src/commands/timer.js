@@ -7,7 +7,12 @@ import {
   findProjectByName,
 } from '../api/projects.js';
 import getWorkspaceInfo from '../api/workspace.js';
-import {startTimer, activeTimer, stopTimer} from '../api/timeEntries.js';
+import {
+  startTimer,
+  activeTimer,
+  stopTimer,
+  deleteTimeEntry,
+} from '../api/timeEntries.js';
 import {timerDuration} from '../utils/timerDuration.js';
 import {spinnerConfig} from '../utils/spinnerConfig.js';
 import handleError from '../utils/error.js';
@@ -20,8 +25,8 @@ const timerCommand = new Command('timer').description(
 timerCommand
   .command('start')
   .description('Start a new timer')
-  .option('-d, --description [description]', 'what are you working on?')
-  .option('-p, --project [project]', 'what project is this timer for?')
+  .option('-d, --description <description>', 'what are you working on?')
+  .option('-p, --project <project>', 'what project is this timer for?')
   .action(async (options) => {
     const spinner = ora(spinnerConfig).start();
     try {
@@ -126,6 +131,74 @@ timerCommand
 
       spinner.stop();
       console.log(chalk.gray(`Currently tracking ${activeTimerMsg}`));
+    } catch (error) {
+      spinner.stop();
+      handleError(error);
+    }
+  });
+
+timerCommand
+  .command('delete')
+  .description('Delete the latest timer or more recent timers')
+  .option('-l, --last <number>', 'number of recent timers to delete', parseInt)
+  .action(async (options) => {
+    const spinner = ora(spinnerConfig).start();
+    try {
+      // validate that options.last is a positive number if provided
+      if (
+        options.last !== undefined &&
+        (!Number.isInteger(options.last) || options.last <= 0)
+      ) {
+        spinner.stop();
+        return handleError(
+          new Error('Please provide a positive integer in the --last option.')
+        );
+      }
+
+      // if options.last is 5 or more, prompt user for confirmation
+
+      if (options.last >= 5) {
+        spinner.stop();
+        const {confirmDelete} = await inquirer.prompt([
+          {
+            type: 'confirm',
+            name: 'confirmDelete',
+            message: `Are you sure you want to delete the last ${options.last} time entries? This action cannot be undone.`,
+            default: false,
+          },
+        ]);
+        if (!confirmDelete) {
+          return console.log(chalk.yellow('✓ Timer deletion cancelled.'));
+        }
+        spinner.start();
+      }
+
+      const desiredCount = options.last || 1;
+      const deletedEntries = await deleteTimeEntry(desiredCount);
+      spinner.stop();
+
+      if (desiredCount === 1) {
+        console.log(chalk.green('✓ Timer deleted successfully!'));
+      } else {
+        console.log(
+          chalk.green(`✓ ${deletedEntries.length} timers deleted successfully!`)
+        );
+        // for each timer deleted, list description and time duration
+        deletedEntries.forEach((entry) => {
+          console.log(
+            chalk.gray(
+              `- ${entry.description} (${
+                entry.timeInterval.duration === null
+                  ? `${timerDuration(entry.timeInterval.start)}, ${chalk.bold('was running')}`
+                  : timerDuration(
+                      entry.timeInterval.start,
+                      entry.timeInterval.end
+                    )
+              })`
+            )
+          );
+        });
+      }
     } catch (error) {
       spinner.stop();
       handleError(error);
