@@ -12,8 +12,10 @@ import {
   activeTimer,
   stopTimer,
   deleteTimeEntry,
+  findTimeEntries,
 } from '../api/timeEntries.js';
 import {timerDuration} from '../utils/timerDuration.js';
+import {formatDate} from '../utils/formatDate.js';
 import {spinnerConfig} from '../utils/spinnerConfig.js';
 import handleError from '../utils/error.js';
 import ora from 'ora';
@@ -140,30 +142,34 @@ timerCommand
 timerCommand
   .command('delete')
   .description('Delete the latest timer or more recent timers')
-  .option('-l, --last <number>', 'number of recent timers to delete', parseInt)
+  .option(
+    '-n, --number <number>',
+    'number of recent timers to delete',
+    parseInt
+  )
   .action(async (options) => {
     const spinner = ora(spinnerConfig).start();
     try {
-      // validate that options.last is a positive number if provided
+      // validate that options.number is a positive number if provided
       if (
-        options.last !== undefined &&
-        (!Number.isInteger(options.last) || options.last <= 0)
+        options.number !== undefined &&
+        (!Number.isInteger(options.number) || options.number <= 0)
       ) {
         spinner.stop();
         return handleError(
-          new Error('Please provide a positive integer in the --last option.')
+          new Error('Please provide a positive integer in the --number option.')
         );
       }
 
-      // if options.last is 5 or more, prompt user for confirmation
+      // if options.number is 3 or more, prompt user for confirmation
 
-      if (options.last >= 5) {
+      if (options.number >= 3) {
         spinner.stop();
         const {confirmDelete} = await inquirer.prompt([
           {
             type: 'confirm',
             name: 'confirmDelete',
-            message: `Are you sure you want to delete the last ${options.last} time entries? This action cannot be undone.`,
+            message: `Are you sure you want to delete the last ${options.number} time entries? This action cannot be undone.`,
             default: false,
           },
         ]);
@@ -173,7 +179,7 @@ timerCommand
         spinner.start();
       }
 
-      const desiredCount = options.last || 1;
+      const desiredCount = options.number || 1;
       const deletedEntries = await deleteTimeEntry(desiredCount);
       spinner.stop();
 
@@ -199,6 +205,70 @@ timerCommand
           );
         });
       }
+    } catch (error) {
+      spinner.stop();
+      handleError(error);
+    }
+  });
+
+timerCommand
+  .command('list')
+  .description('List the latest time entries')
+  .option('-n, --number <number>', 'number of recent timers to list', parseInt)
+  .action(async (options) => {
+    const spinner = ora(spinnerConfig).start();
+    try {
+      if (
+        options.number !== undefined &&
+        (!Number.isInteger(options.number) || options.number <= 0)
+      ) {
+        spinner.stop();
+        return handleError(
+          new Error('Please provide a positive integer in the --number option.')
+        );
+      } else if (options.number >= 50) {
+        const {confirmList} = await inquirer.prompt([
+          {
+            type: 'confirm',
+            name: 'confirmList',
+            message: `Are you sure you want to list the last ${options.number} time entries? This may take a while.`,
+            default: false,
+          },
+        ]);
+        if (!confirmList) {
+          return console.log(chalk.yellow('✓ Timer listing cancelled.'));
+        }
+      }
+
+      const timeEntries = await findTimeEntries(options.number || 25);
+      const projects = await getProjects('archived');
+
+      spinner.stop();
+      if (timeEntries.length === 0) {
+        return console.log(chalk.yellow('No time entries found.'));
+      }
+      console.log(
+        chalk.green(`✓ Here's your last ${timeEntries.length} time entries:`)
+      );
+      timeEntries.forEach((entry) => {
+        console.log(
+          chalk.gray(
+            `${chalk.white.bold(entry.description)} (${
+              entry.timeInterval.duration === null
+                ? `${timerDuration(entry.timeInterval.start)}, ${chalk.bold('currently running')}`
+                : timerDuration(
+                    entry.timeInterval.start,
+                    entry.timeInterval.end
+                  ) + `, ${formatDate(entry.timeInterval.start)}`
+            })` +
+              ` | ${
+                entry.projectId === null
+                  ? ``
+                  : `${chalk.hex(projects.find((p) => p.id === entry.projectId)?.color || '#FFFFFF')(projects.find((p) => p.id === entry.projectId)?.name || 'Unknown Project')}`
+              }`
+          )
+        );
+      });
     } catch (error) {
       spinner.stop();
       handleError(error);
